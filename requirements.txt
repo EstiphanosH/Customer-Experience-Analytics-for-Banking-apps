@@ -1,0 +1,60 @@
+# Core data science packages
+numpy
+pandas
+scikit-learn
+
+
+# Time series analysis
+statsmodels
+pmdarima
+
+# Natural Language Processing
+nltk
+textblob
+
+# Visualization and Notebooks
+matplotlib
+plotly
+ipywidgets
+nbformat
+
+# Jupyter Environment
+jupyter
+jupyter-client
+jupyter-core
+jupyter-server
+jupyterlab
+jupyterlab-widgets
+notebook
+ipykernel
+jupyter-contrib-nbextensions
+jupyter-nbextensions-configurator
+
+# Utilities
+tqdm
+python-dateutil
+
+# Dependencies for pyfolio
+scipy
+seaborn
+#
+
+# Optional: Interactive Plotting Extensions
+plotly-express
+cufflinks
+chart-studio
+
+# Deep Learning (optional, if needed)
+# tensorflow==2.13.0
+# torch==2.0.1
+setuptools<81
+
+
+# Database and Web Scraping
+sqlalchemy
+beautifulsoup4
+google-play-scraper
+# Oracle database connector
+cx_Oracle
+# Additional utilities
+requests
