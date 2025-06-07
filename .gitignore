@@ -1,0 +1,28 @@
+# Ignore hidden conda or virtual environments
+.env/
+.venv/
+.conda_env/
+env/
+venv/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Data files
+data/
+*.csv
+*.tsv
+
+# VSCode settings (optional)
+.vscode/
+
+# MacOS system files (optional)
+.DS_Store
+
+nltk_data/
+# Ignore Jupyter Notebook metadata
