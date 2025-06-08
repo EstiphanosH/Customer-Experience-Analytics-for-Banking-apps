@@ -1,8 +1,8 @@
-# Customer Experience Analytics for Ethiopian BAnk Apps
+# Customer Experience Analytics for Ethiopian Banking Apps
 
 This project simulates the role of a data analyst at Omega Consultancy, where mobile banking app reviews for three major Ethiopian banks—Commercial Bank of Ethiopia (CBE), Bank of Abyssinia (BOA), and Dashen Bank—are to be analyzed.
 
-## Challenge Overview
+## Project Challenge Overview
 As part of a consulting engagement, user reviews from the Google Play Store are to be scraped and analyzed to help these banks identify satisfaction drivers, recurring complaints, and areas for improvement.
 
 ### Business Objective
@@ -41,7 +41,7 @@ Support is being provided to improve customer retention and satisfaction through
 - Actionable recommendations for app improvement are to be provided.
 
 ## Folder Structure
-- `src/`: Modular scripts are to be placed here for scraping, preprocessing, NLP, database interaction, and plotting.
+- `scripts/`: Modular scripts are to be placed here for scraping, preprocessing, NLP, database interaction, and plotting.
 - `tests/`: Unit tests with Pytest are to be stored for code reliability.
 - `data/`: Raw and processed datasets are to be saved.
 - `notebooks/`: Exploratory and final analysis notebooks are to be stored.
