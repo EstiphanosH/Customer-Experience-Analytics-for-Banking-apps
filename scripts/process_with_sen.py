@@ -710,7 +710,6 @@ class BankReviewsProcessor:
         except Exception as e:
             logging.error(f"Error generating thematic report: {e}")
 
-
 if __name__ == "__main__":
     # Example usage
     processor = BankReviewsProcessor(
@@ -728,7 +727,6 @@ if __name__ == "__main__":
     if not processor.setup_database():
         logging.error("Failed to setup database")
         exit(1)
-    
     # Process all files
     if processor.process_all_files():
         logging.info("All files processed successfully")
