@@ -2,13 +2,15 @@ import unittest
 from unittest.mock import patch, MagicMock
 import os
 import pandas as pd
+from datetime import datetime  # Added missing import
 
 # Add the parent directory to the Python path to import modules
 import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'scripts')))
 
-from scraping import scrape_reviews
-from utils import RAW_DATA_DIR, APP_ID_TO_BANK_NAME, TODAY_DATE_STR, create_directories
+from scripts.scraper import GooglePlayScraper  # Fixed import path
+from scripts.utils import RAW_DATA_DIR, APP_ID_TO_BANK_NAME, TODAY_DATE_STR, create_directories
 
 # Define dummy data for mocking the scraper
 DUMMY_REVIEWS = [
@@ -35,27 +37,25 @@ class TestScraping(unittest.TestCase):
              if os.path.exists(dummy_filepath):
                  os.remove(dummy_filepath)
 
-    @patch('scraping.reviews_all')
+    @patch('scripts.scraper.reviews_all')
     def test_scrape_reviews_saves_file(self, mock_reviews_all):
-        """Test that scrape_reviews calls reviews_all and saves a CSV."""
+        """Test that GooglePlayScraper calls reviews_all and saves a CSV."""
         # Configure the mock to return dummy data
         mock_reviews_all.return_value = DUMMY_REVIEWS
 
         # Define dummy app IDs for this test
-        dummy_app_ids = ['com.test.app1']
+        dummy_app_ids = {'com.test.app1': 'Test_App_1'}
         dummy_app_name = 'Test_App_1'
-        # Temporarily add dummy app to APP_ID_TO_BANK_NAME for this test
-        original_mapping = APP_ID_TO_BANK_NAME.copy()
-        APP_ID_TO_BANK_NAME['com.test.app1'] = dummy_app_name
 
         expected_filepath = os.path.join(self.raw_data_dir, f'{dummy_app_name}_raw_{TODAY_DATE_STR}.csv')
 
-        # Run the function
-        scraped_files = scrape_reviews(dummy_app_ids)
+        # Create scraper instance and run
+        scraper = GooglePlayScraper(app_ids_map=dummy_app_ids, raw_data_dir=self.raw_data_dir)
+        scraped_files = scraper.scrape_all_apps()
 
         # Assertions
         mock_reviews_all.assert_called_once_with(
-            dummy_app_ids[0],
+            'com.test.app1',
             lang='en',
             country='us',
             sort=MagicMock(), # We don't strictly care about the Sort object instance in mock
@@ -69,25 +69,20 @@ class TestScraping(unittest.TestCase):
         df = pd.read_csv(expected_filepath)
         self.assertEqual(len(df), len(DUMMY_REVIEWS))
         self.assertListEqual(list(df.columns), ['review_text', 'rating', 'date', 'app_id', 'source'])
-        self.assertEqual(df['app_id'][0], dummy_app_ids[0])
+        self.assertEqual(df['app_id'][0], 'com.test.app1')
         self.assertEqual(df['rating'][0], DUMMY_REVIEWS[0]['score'])
         self.assertEqual(df['review_text'][0], DUMMY_REVIEWS[0]['content'])
 
-
-        # Clean up the created file and restore original mapping
+        # Clean up the created file
         if os.path.exists(expected_filepath):
              os.remove(expected_filepath)
-        global APP_ID_TO_BANK_NAME # Need global to modify in a function
-        APP_ID_TO_BANK_NAME = original_mapping
 
 
-    @patch('scraping.reviews_all')
+    @patch('scripts.scraper.reviews_all')
     def test_scrape_reviews_skips_existing_file(self, mock_reviews_all):
-        """Test that scrape_reviews skips scraping if a file for today already exists."""
-        dummy_app_ids = ['com.test.app2']
+        """Test that GooglePlayScraper skips scraping if a file for today already exists."""
+        dummy_app_ids = {'com.test.app2': 'Test_App_2'}
         dummy_app_name = 'Test_App_2'
-        original_mapping = APP_ID_TO_BANK_NAME.copy()
-        APP_ID_TO_BANK_NAME['com.test.app2'] = dummy_app_name
 
         expected_filepath = os.path.join(self.raw_data_dir, f'{dummy_app_name}_raw_{TODAY_DATE_STR}.csv')
 
@@ -95,8 +90,9 @@ class TestScraping(unittest.TestCase):
         with open(expected_filepath, 'w') as f:
             f.write("header\n") # Just needs to exist
 
-        # Run the function
-        scraped_files = scrape_reviews(dummy_app_ids)
+        # Create scraper instance and run
+        scraper = GooglePlayScraper(app_ids_map=dummy_app_ids, raw_data_dir=self.raw_data_dir)
+        scraped_files = scraper.scrape_all_apps()
 
         # Assertions
         mock_reviews_all.assert_not_called() # Ensure the scraper was not called
@@ -106,34 +102,26 @@ class TestScraping(unittest.TestCase):
         # Clean up
         if os.path.exists(expected_filepath):
              os.remove(expected_filepath)
-        global APP_ID_TO_BANK_NAME
-        APP_ID_TO_BANK_NAME = original_mapping
 
 
-    @patch('scraping.reviews_all')
+    @patch('scripts.scraper.reviews_all')
     def test_scrape_reviews_handles_no_results(self, mock_reviews_all):
-        """Test that scrape_reviews handles the case where no reviews are found."""
+        """Test that GooglePlayScraper handles the case where no reviews are found."""
         mock_reviews_all.return_value = [] # Mock returning an empty list
 
-        dummy_app_ids = ['com.test.app3']
+        dummy_app_ids = {'com.test.app3': 'Test_App_3'}
         dummy_app_name = 'Test_App_3'
-        original_mapping = APP_ID_TO_BANK_NAME.copy()
-        APP_ID_TO_BANK_NAME['com.test.app3'] = dummy_app_name
-
 
         expected_filepath = os.path.join(self.raw_data_dir, f'{dummy_app_name}_raw_{TODAY_DATE_STR}.csv')
 
-        # Run the function
-        scraped_files = scrape_reviews(dummy_app_ids)
+        # Create scraper instance and run
+        scraper = GooglePlayScraper(app_ids_map=dummy_app_ids, raw_data_dir=self.raw_data_dir)
+        scraped_files = scraper.scrape_all_apps()
 
         # Assertions
         mock_reviews_all.assert_called_once() # Scraper should be called
         self.assertNotIn(expected_filepath, scraped_files) # No file should be created or added
         self.assertFalse(os.path.exists(expected_filepath)) # No file should exist
-
-        # Clean up
-        global APP_ID_TO_BANK_NAME
-        APP_ID_TO_BANK_NAME = original_mapping
 
 
 if __name__ == '__main__':

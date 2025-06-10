@@ -1,5 +1,6 @@
 import pandas as pd
 import os
+import re  # Added missing import for regex operations
 from tqdm import tqdm
 from transformers import pipeline
 import spacy
@@ -16,20 +17,20 @@ from utils import ANALYSIS_DATA_DIR, FIGURES_DIR, TODAY_DATE_STR, THEME_KEYWORDS
 # Set up basic logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# Initialize sentiment pipeline (DistilBERT)
-sentiment_pipeline = None
-SENTIMENT_MODEL_READY = False
-print("Loading sentiment analysis model...")
-try:
-    # Explicitly set device to 'cpu' if not using GPU, can prevent issues
-    # import torch
-    # device = 0 if torch.cuda.is_available() else -1
-    sentiment_pipeline = pipeline("sentiment-analysis", model="distilbert-base-uncased-finetuned-sst-2-english") #, device=device)
-    print("Sentiment analysis model loaded.")
-    SENTIMENT_MODEL_READY = True
-except Exception as e:
-    print(f"Error loading sentiment analysis model: {e}")
-    print("Sentiment analysis and related tasks will be skipped.")
+# Initialize sentiment pipeline (DistilBERT) - moved to function to avoid global state issues
+def get_sentiment_pipeline():
+    """Initialize and return sentiment pipeline, with error handling."""
+    try:
+        # Explicitly set device to 'cpu' if not using GPU, can prevent issues
+        # import torch
+        # device = 0 if torch.cuda.is_available() else -1
+        pipeline_obj = pipeline("sentiment-analysis", model="distilbert-base-uncased-finetuned-sst-2-english") #, device=device)
+        print("Sentiment analysis model loaded.")
+        return pipeline_obj, True
+    except Exception as e:
+        print(f"Error loading sentiment analysis model: {e}")
+        print("Sentiment analysis and related tasks will be skipped.")
+        return None, False
 
 # Load spaCy model - ensure it's downloaded first
 download_spacy_model()
@@ -90,7 +91,9 @@ def analyze_reviews(df: pd.DataFrame) -> pd.DataFrame:
 
     # --- Sentiment Analysis ---
     print("\nPerforming sentiment analysis...")
-    if SENTIMENT_MODEL_READY:
+    sentiment_pipeline, sentiment_model_ready = get_sentiment_pipeline()
+
+    if sentiment_model_ready and sentiment_pipeline:
         # Ensure review_text is string type and handle NaNs before sentiment analysis
         analysis_df['review_text'] = analysis_df['review_text'].astype(str).fillna('')
         review_texts = analysis_df['review_text'].tolist()
@@ -122,8 +125,11 @@ def analyze_reviews(df: pd.DataFrame) -> pd.DataFrame:
             # Fallback: add sentiment columns with default values if analysis failed
             if 'sentiment_label' not in analysis_df.columns: analysis_df['sentiment_label'] = None
             if 'sentiment_score' not in analysis_df.columns: analysis_df['sentiment_score'] = None
-            # Keep SENTIMENT_MODEL_READY as False for plotting later
-            SENTIMENT_MODEL_READY = False
+            sentiment_model_ready = False
+    else:
+        # Add empty sentiment columns if model not available
+        analysis_df['sentiment_label'] = None
+        analysis_df['sentiment_score'] = None
 
 
     # --- Text Preprocessing for Thematic Analysis ---
@@ -158,7 +164,8 @@ def analyze_reviews(df: pd.DataFrame) -> pd.DataFrame:
     print(f"\nSample reviews with identified themes:")
     # Only display if there are reviews
     if not analysis_df.empty:
-        display(analysis_df[['review_text', 'identified_themes']].sample(min(5, len(analysis_df)))) # Show max 5 samples
+        sample_df = analysis_df[['review_text', 'identified_themes']].sample(min(5, len(analysis_df)))
+        print(sample_df.to_string(index=False))  # Replace display() with print() for script compatibility
 
 
     # --- Prepare data for Analysis Scenarios ---
@@ -230,7 +237,10 @@ def generate_scenario_1_plots(df: pd.DataFrame, banks: list):
         print(f"Plot 3: '{performance_issue_theme}' theme count saved.")
 
     # Plot 4: Average Sentiment Score for Reviews with 'App Performance (Slow/Crash)' Theme per Bank
-    if not df_performance_issues.empty and 'sentiment_score' in df_performance_issues.columns and SENTIMENT_MODEL_READY:
+    has_sentiment_data = ('sentiment_score' in df_performance_issues.columns and
+                         df_performance_issues['sentiment_score'].notna().any())
+
+    if not df_performance_issues.empty and has_sentiment_data:
         plt.figure(figsize=(10, 6))
         # Ensure sentiment_score is numeric
         df_performance_issues['sentiment_score'] = pd.to_numeric(df_performance_issues['sentiment_score'], errors='coerce')
@@ -244,8 +254,8 @@ def generate_scenario_1_plots(df: pd.DataFrame, banks: list):
         plt.savefig(os.path.join(FIGURES_DIR, f'scenario1_performance_theme_sentiment_{TODAY_DATE_STR}.png'))
         plt.close()
         print(f"Plot 4: '{performance_issue_theme}' theme sentiment saved.")
-    elif not SENTIMENT_MODEL_READY:
-        print("Skipping sentiment plots for Scenario 1 as the sentiment model was not ready.")
+    else:
+        print("Skipping sentiment plots for Scenario 1 as sentiment data is not available.")
 
 
     print("--- Scenario 1 Plots Generated ---")
@@ -281,7 +291,10 @@ def generate_scenario_2_plots(df: pd.DataFrame):
 
 
     # Plot 2: Sentiment Distribution for 'Missing Features/Suggestions' Reviews
-    if 'sentiment_label' in df_features.columns and SENTIMENT_MODEL_READY:
+    has_sentiment_labels = ('sentiment_label' in df_features.columns and
+                           df_features['sentiment_label'].notna().any())
+
+    if has_sentiment_labels:
         plt.figure(figsize=(8, 5))
         sns.countplot(data=df_features, x='sentiment_label', order=['NEGATIVE', 'POSITIVE'], palette='viridis')
         plt.title(f"Sentiment Distribution for '{feature_suggestion_theme}' Reviews")
@@ -291,8 +304,8 @@ def generate_scenario_2_plots(df: pd.DataFrame):
         plt.savefig(os.path.join(FIGURES_DIR, f'scenario2_feature_theme_sentiment_dist_{TODAY_DATE_STR}.png'))
         plt.close()
         print(f"Plot 2: '{feature_suggestion_theme}' sentiment distribution saved.")
-    elif not SENTIMENT_MODEL_READY:
-        print("Skipping sentiment plots for Scenario 2 as the sentiment model was not ready.")
+    else:
+        print("Skipping sentiment plots for Scenario 2 as sentiment data is not available.")
 
 
     # Plot 3: Top Keywords in 'Missing Features/Suggestions' Reviews (Word Cloud)
@@ -380,7 +393,10 @@ def generate_scenario_3_plots(df: pd.DataFrame):
 
 
     # Plot 3: Sentiment Distribution for Complaint Reviews
-    if 'sentiment_label' in df_complaints.columns and SENTIMENT_MODEL_READY:
+    has_sentiment_labels = ('sentiment_label' in df_complaints.columns and
+                           df_complaints['sentiment_label'].notna().any())
+
+    if has_sentiment_labels:
         plt.figure(figsize=(8, 5))
         sns.countplot(data=df_complaints, x='sentiment_label', order=['NEGATIVE', 'POSITIVE'], palette='viridis')
         plt.title("Sentiment Distribution for Reviews with Complaint Themes")
@@ -390,8 +406,8 @@ def generate_scenario_3_plots(df: pd.DataFrame):
         plt.savefig(os.path.join(FIGURES_DIR, f'scenario3_complaint_sentiment_dist_{TODAY_DATE_STR}.png'))
         plt.close()
         print("Plot 3: Complaint review sentiment distribution saved.")
-    elif not SENTIMENT_MODEL_READY:
-         print("Skipping sentiment plots for Scenario 3 as the sentiment model was not ready.")
+    else:
+        print("Skipping sentiment plots for Scenario 3 as sentiment data is not available.")
 
     # Plot 4: Top Keywords in Reviews with Complaint Themes (Word Cloud)
     if not df_complaints['processed_text'].empty and df_complaints['processed_text'].str.strip().any():
@@ -425,7 +441,10 @@ def generate_general_eda_plots(df: pd.DataFrame):
         return
 
     # Example: Overall Sentiment Distribution
-    if 'sentiment_label' in df.columns and SENTIMENT_MODEL_READY:
+    has_sentiment_labels = ('sentiment_label' in df.columns and
+                           df['sentiment_label'].notna().any())
+
+    if has_sentiment_labels:
         plt.figure(figsize=(8, 5))
         sns.countplot(data=df, x='sentiment_label', order=['NEGATIVE', 'POSITIVE'], palette='viridis')
         plt.title('Overall Sentiment Distribution of Reviews')
@@ -435,8 +454,8 @@ def generate_general_eda_plots(df: pd.DataFrame):
         plt.savefig(os.path.join(FIGURES_DIR, f'general_overall_sentiment_dist_{TODAY_DATE_STR}.png'))
         plt.close()
         print("General EDA Plot: Overall sentiment distribution saved.")
-    elif not SENTIMENT_MODEL_READY:
-         print("Skipping general sentiment plot as the sentiment model was not ready.")
+    else:
+        print("Skipping general sentiment plot as sentiment data is not available.")
 
     # Example: Word Cloud of most frequent words (excluding stopwords and theme keywords)
     if not df['processed_text'].empty and df['processed_text'].str.strip().any():

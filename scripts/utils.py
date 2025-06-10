@@ -13,10 +13,13 @@ APP_ID_TO_BANK_NAME = {
 APP_IDS = list(APP_ID_TO_BANK_NAME.keys())
 
 TODAY_DATE_STR = datetime.now().strftime('%Y%m%d')
-RAW_DATA_DIR = "../data/raw"
-CLEANED_DATA_DIR = "../data/cleaned"
-ANALYSIS_DATA_DIR = "../data/analysis"
-REPORTS_DIR = "../reports"
+
+# Use absolute paths relative to the project root to avoid path issues
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+RAW_DATA_DIR = os.path.join(PROJECT_ROOT, "data", "raw")
+CLEANED_DATA_DIR = os.path.join(PROJECT_ROOT, "data", "cleaned")
+ANALYSIS_DATA_DIR = os.path.join(PROJECT_ROOT, "data", "analysis")
+REPORTS_DIR = os.path.join(PROJECT_ROOT, "reports")
 FIGURES_DIR = os.path.join(REPORTS_DIR, "figures")
 
 # --- Oracle Database Constants ---

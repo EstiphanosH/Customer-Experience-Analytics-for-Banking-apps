@@ -82,9 +82,9 @@ class ReviewPreprocessor:
 
             # Check if the internal standard columns are now present
             if not all(col in self.df.columns for col in self.internal_cols):
-                 logging.error(f"Internal standard columns {self.internal_cols} not present after renaming. Cannot proceed.")
-                 self.df = pd.DataFrame()
-                 return False
+                logging.error(f"Internal standard columns {self.internal_cols} not present after renaming. Cannot proceed.")
+                self.df = pd.DataFrame()
+                return False
 
             return True
 
@@ -116,16 +116,16 @@ class ReviewPreprocessor:
             return
         # Use the *internal* standard date column name
         if 'review_date' not in self.df.columns:
-             logging.error("'review_date' column not found. Skipping date normalization.")
-             return
+            logging.error("'review_date' column not found. Skipping date normalization.")
+            return
 
         original_dtype = self.df['review_date'].dtype
         self.df['review_date'] = pd.to_datetime(self.df['review_date'], errors='coerce')
 
         if not pd.api.types.is_datetime64_any_dtype(self.df['review_date']):
-             logging.warning(f"Could not convert 'review_date' column to datetime from {original_dtype}. It remains type {self.df['review_date'].dtype}. Normalization skipped.")
-             # Add the normalized column anyway, but it might contain NaT or errors
-             self.df['date_normalized'] = None # Or a placeholder
+            logging.warning(f"Could not convert 'review_date' column to datetime from {original_dtype}. It remains type {self.df['review_date'].dtype}. Normalization skipped.")
+            # Add the normalized column anyway, but it might contain NaT or errors
+            self.df['date_normalized'] = None # Or a placeholder
         else:
             self.df['date_normalized'] = self.df['review_date'].dt.strftime('%Y-%m-%d')
             logging.info("'review_date' column converted to datetime and 'date_normalized' column added.")
@@ -139,10 +139,10 @@ class ReviewPreprocessor:
         check_cols = ['review_text', 'rating', 'review_date']
         # Ensure these columns exist before trying to drop NaNs
         if not all(col in self.df.columns for col in check_cols):
-             logging.error(f"Essential columns {check_cols} not found. Cannot handle missing values.")
-             # Optionally, reset df to empty if essential columns are gone
-             # self.df = pd.DataFrame()
-             return
+            logging.error(f"Essential columns {check_cols} not found. Cannot handle missing values.")
+            # Optionally, reset df to empty if essential columns are gone
+            # self.df = pd.DataFrame()
+            return
 
         initial_rows = len(self.df)
         # Drop rows with missing 'review_text' or 'rating'
@@ -162,10 +162,10 @@ class ReviewPreprocessor:
 
         subset_cols = ['app_id', 'review_text', 'rating', 'review_date']
         if not all(col in self.df.columns for col in subset_cols):
-             logging.error(f"Essential columns {subset_cols} not found. Cannot remove duplicates.")
-             # Optionally, reset df to empty
-             # self.df = pd.DataFrame()
-             return
+            logging.error(f"Essential columns {subset_cols} not found. Cannot remove duplicates.")
+            # Optionally, reset df to empty
+            # self.df = pd.DataFrame()
+            return
 
         initial_rows = len(self.df)
         self.df.drop_duplicates(subset=subset_cols, inplace=True)
@@ -177,10 +177,10 @@ class ReviewPreprocessor:
             logging.warning("No data loaded or DataFrame is empty. Skipping adding bank name.")
             return
         if 'app_id' not in self.df.columns:
-             logging.error("'app_id' column not found. Cannot add bank name.")
-             # Add the column with a default value to maintain structure
-             self.df['bank_name'] = 'Unknown_Bank'
-             return
+            logging.error("'app_id' column not found. Cannot add bank name.")
+            # Add the column with a default value to maintain structure
+            self.df['bank_name'] = 'Unknown_Bank'
+            return
 
         self.df['bank_name'] = self.df['app_id'].map(self.app_id_to_bank_name).fillna('Unknown_Bank')
         logging.info("'bank_name' column added.")
@@ -193,8 +193,8 @@ class ReviewPreprocessor:
 
         # Add review_id as a sequential ID for the *current* state of the DataFrame
         if 'review_id' not in self.df.columns:
-             self.df['review_id'] = range(len(self.df))
-             logging.info("'review_id' column added.")
+            self.df['review_id'] = range(len(self.df))
+            logging.info("'review_id' column added.")
 
         # Ensure 'processed_text' is added if not already there (it will be added in analysis, but ensure it exists)
         if 'processed_text' not in self.df.columns:
@@ -202,15 +202,15 @@ class ReviewPreprocessor:
 
         # Ensure all final database columns exist before selecting
         for col in self.final_db_cols:
-             if col not in self.df.columns:
-                 default_value = None
-                 if col in ['review_text', 'processed_text', 'bank_name', 'source', 'app_id', 'date_normalized']:
-                     default_value = '' # String default
-                 elif col in ['rating', 'review_id']:
-                      default_value = -1 # Numeric placeholder
+            if col not in self.df.columns:
+                default_value = None
+                if col in ['review_text', 'processed_text', 'bank_name', 'source', 'app_id', 'date_normalized']:
+                    default_value = '' # String default
+                elif col in ['rating', 'review_id']:
+                    default_value = -1 # Numeric placeholder
 
-                 logging.warning(f"Final DB column '{col}' not found. Adding with default value: {default_value}")
-                 self.df[col] = default_value
+                logging.warning(f"Final DB column '{col}' not found. Adding with default value: {default_value}")
+                self.df[col] = default_value
 
         # Select and reorder the final database columns
         # Ensure columns to select are actually in the DataFrame after adding defaults
@@ -238,7 +238,7 @@ class ReviewPreprocessor:
         # Determine bank name for filename - use the 'bank_name' column from the DF if available
         bank_name_for_filename = 'Unknown_Bank'
         if 'bank_name' in df_to_save.columns and not df_to_save.empty:
-             bank_name_for_filename = df_to_save['bank_name'].mode()[0] if not df_to_save['bank_name'].mode().empty else 'Unknown_Bank'
+            bank_name_for_filename = df_to_save['bank_name'].mode()[0] if not df_to_save['bank_name'].mode().empty else 'Unknown_Bank'
 
         bank_name_for_filename = bank_name_for_filename.replace(' ', '_')
 

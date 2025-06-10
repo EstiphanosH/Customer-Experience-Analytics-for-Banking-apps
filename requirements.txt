@@ -11,6 +11,10 @@ pmdarima
 # Natural Language Processing
 nltk
 textblob
+spacy
+transformers
+torch
+wordcloud
 
 # Visualization and Notebooks
 matplotlib
@@ -54,7 +58,7 @@ setuptools<81
 sqlalchemy
 beautifulsoup4
 google-play-scraper
-# Oracle database connector
-cx_Oracle
+# Oracle database connector (updated to newer version)
+oracledb
 # Additional utilities
 requests

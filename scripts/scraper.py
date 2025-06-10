@@ -27,7 +27,7 @@ class GooglePlayScraper:
         if not isinstance(app_ids_map, dict) or not app_ids_map:
             raise ValueError("app_ids_map must be a non-empty dictionary.")
         if not isinstance(raw_data_dir, str) or not raw_data_dir:
-             raise ValueError("raw_data_dir must be a non-empty string.")
+            raise ValueError("raw_data_dir must be a non-empty string.")
 
         self.app_ids_map = app_ids_map
         self.raw_data_dir = raw_data_dir
@@ -54,8 +54,8 @@ class GooglePlayScraper:
                          if the file already exists and scraping is skipped.
         """
         if app_id not in self.app_ids_map:
-             logging.warning(f"App ID '{app_id}' not found in the provided app_ids_map. Skipping.")
-             return None # Indicate that this app ID wasn't meant to be processed
+            logging.warning(f"App ID '{app_id}' not found in the provided app_ids_map. Skipping.")
+            return None # Indicate that this app ID wasn't meant to be processed
 
         bank_name = self.app_ids_map.get(app_id, 'Unknown_App').replace(' ', '_')
         raw_filename = f'{bank_name}_raw_{self.today_date_str}.csv'
@@ -98,16 +98,16 @@ class GooglePlayScraper:
             str | None: The path of the saved file if successful, None otherwise.
         """
         if reviews is None: # Handle the case where scrape_app_reviews returned None
-             logging.warning(f"Cannot save reviews for app ID {app_id}: reviews list is None.")
-             return None
+            logging.warning(f"Cannot save reviews for app ID {app_id}: reviews list is None.")
+            return None
 
         if not reviews: # Handle empty list (either no reviews or skipped)
-             logging.info(f"No new reviews to save for app ID: {app_id}.")
-             # Return the path of the existing file if it exists, otherwise None
-             bank_name = self.app_ids_map.get(app_id, 'Unknown_App').replace(' ', '_')
-             raw_filename = f'{bank_name}_raw_{self.today_date_str}.csv'
-             raw_filepath = os.path.join(self.raw_data_dir, raw_filename)
-             return raw_filepath if os.path.exists(raw_filepath) else None
+            logging.info(f"No new reviews to save for app ID: {app_id}.")
+            # Return the path of the existing file if it exists, otherwise None
+            bank_name = self.app_ids_map.get(app_id, 'Unknown_App').replace(' ', '_')
+            raw_filename = f'{bank_name}_raw_{self.today_date_str}.csv'
+            raw_filepath = os.path.join(self.raw_data_dir, raw_filename)
+            return raw_filepath if os.path.exists(raw_filepath) else None
 
 
         bank_name = self.app_ids_map.get(app_id, 'Unknown_App').replace(' ', '_')
